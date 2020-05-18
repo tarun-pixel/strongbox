@@ -55,7 +55,7 @@ public class FetchRemoteNpmChangesFeedCronJob
             return false;
         }
 
-        return shouldDownloadRemoteChangesFeed();
+        return false;
     }
 
     @Override

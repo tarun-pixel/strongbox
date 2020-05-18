@@ -49,7 +49,7 @@ public class DownloadRemoteFeedCronJob
             return false;
         }
 
-        return shouldDownloadRemoteRepositoryFeed();
+        return false;
     }
 
     @Override
