@@ -61,10 +61,14 @@ public class RepositoryManagementTest
 
     @ExtendWith({ RepositoryManagementTestExecutionListener.class, ArtifactManagementTestExecutionListener.class })
     @Test
-    public void testParametersShouldBeInjected(@RawRepository(repositoryId = "rmt1") Repository r1,
-                                               @RawRepository(repositoryId = "rmt2") Repository r2,
-                                               @TestArtifact(resource = "artifact1.ext", generator = RawArtifactGenerator.class) Path standaloneArtifact,
-                                               @TestArtifact(repositoryId = "rmt2", resource = "org/carlspring/test/artifact2.ext", generator = RawArtifactGenerator.class) Path repositoryArtifact,
+    public void testParametersShouldBeInjected(@RawRepository(repositoryId = "rmt1-tpsbi-releases") Repository r1,
+                                               @RawRepository(repositoryId = "rmt2-tpsbi-releases") Repository r2,
+                                               @TestArtifact(repositoryId = "rmt1-tpsbi-releases",
+                                                             resource = "artifact1.ext",
+                                                             generator = RawArtifactGenerator.class) Path standaloneArtifact,
+                                               @TestArtifact(repositoryId = "rmt2-tpsbi-releases",
+                                                             resource = "org/carlspring/test/artifact2.ext",
+                                                             generator = RawArtifactGenerator.class) Path repositoryArtifact,
                                                TestInfo testInfo)
     {
         assertThat(testInfo).isNotNull();
@@ -73,10 +77,10 @@ public class RepositoryManagementTest
 
     @ExtendWith({ RepositoryManagementTestExecutionListener.class, ArtifactManagementTestExecutionListener.class })
     @Test
-    public void testGroupRepository(@RawRepository(repositoryId = "rmt1") Repository r1,
-                                    @RawRepository(repositoryId = "rmt2") Repository r2,
-                                    @TestRepository.Group(repositories = { "rmt1",
-                                                                           "rmt2" })
+    public void testGroupRepository(@RawRepository(repositoryId = "rmt1-tgr-releases") Repository r1,
+                                    @RawRepository(repositoryId = "rmt2-tgr-releases") Repository r2,
+                                    @TestRepository.Group(repositories = { "rmt1-tgr-releases",
+                                                                           "rmt2-tgr-releases" })
                                     @RawRepository(repositoryId = "rmtg")
                                     Repository group)
     {
@@ -85,10 +89,16 @@ public class RepositoryManagementTest
     
     @ExtendWith({ RepositoryManagementTestExecutionListener.class, ArtifactManagementTestExecutionListener.class })
     @RepeatedTest(10)
-    public void testConcurrentRepositoryDirect(@RawRepository(repositoryId = "rmt1") Repository r1,
-                                               @RawRepository(repositoryId = "rmt2") Repository r2,
-                                               @TestArtifact(resource = "artifact1.ext", generator = RawArtifactGenerator.class) Path standaloneArtifact,
-                                               @TestArtifact(repositoryId = "rmt2", resource = "org/carlspring/test/artifact2.ext", generator = RawArtifactGenerator.class) Path repositoryArtifact)
+    public void testConcurrentRepositoryDirect(@RawRepository(repositoryId = "rmt1-tcrd-releases") Repository r1,
+                                               @RawRepository(repositoryId = "rmt2-tcrd-releases") Repository r2,
+                                               @TestArtifact(repositoryId = "rmt1-tcrd-releases",
+                                                             resource = "artifact1.ext",
+                                                             generator = RawArtifactGenerator.class)
+                                               Path standaloneArtifact,
+                                               @TestArtifact(repositoryId = "rmt2-tcrd-releases",
+                                                             resource = "org/carlspring/test/artifact2.ext",
+                                                             generator = RawArtifactGenerator.class)
+                                               Path repositoryArtifact)
         throws IOException
     {
         artifactShouldBeCorrectlyResolvedAndUnique(standaloneArtifact);
@@ -98,8 +108,8 @@ public class RepositoryManagementTest
 
     @ExtendWith(RepositoryManagementTestExecutionListener.class)
     @RepeatedTest(10)
-    public void testConcurrentRepositoryReverse(@RawRepository(repositoryId = "rmt2") Repository r2,
-                                                @RawRepository(repositoryId = "rmt1") Repository r1)
+    public void testConcurrentRepositoryReverse(@RawRepository(repositoryId = "rmt1-tcrr-releases") Repository r1,
+                                                @RawRepository(repositoryId = "rmt2-tcrr-releases") Repository r2)
     {
         parametersShouldBeCorrectlyResolvedAndUnique(r1, r2);
     }

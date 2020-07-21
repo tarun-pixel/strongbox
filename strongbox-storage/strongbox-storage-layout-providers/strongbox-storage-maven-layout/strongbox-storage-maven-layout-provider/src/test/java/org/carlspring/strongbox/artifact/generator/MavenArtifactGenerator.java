@@ -11,6 +11,7 @@ import org.carlspring.strongbox.util.TestFileUtils;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
@@ -168,13 +169,13 @@ public class MavenArtifactGenerator implements ArtifactGenerator
             throws NoSuchAlgorithmException,
                    IOException
     {
-        File artifactFile = basedir.resolve(MavenArtifactUtils.convertArtifactToPath(artifact)).toFile();
+        Path artifactPath = basedir.resolve(MavenArtifactUtils.convertArtifactToPath(artifact));
 
         // Make sure the artifact's parent directory exists before writing the model.
         //noinspection ResultOfMethodCallIgnored
-        artifactFile.getParentFile().mkdirs();
+        Files.createDirectories(artifactPath.getParent());
 
-        try (JarOutputStream zos = new JarOutputStream(newOutputStream(artifactFile), createManifest()))
+        try (JarOutputStream zos = new JarOutputStream(Files.newOutputStream(artifactPath), createManifest()))
         {
             createMavenPropertiesFile(artifact, zos);
             addMavenPomFile(artifact, zos);
@@ -183,7 +184,7 @@ public class MavenArtifactGenerator implements ArtifactGenerator
             zos.flush();
         }
 
-        generateChecksumsForArtifact(artifactFile);
+        generateChecksumsForArtifact(artifactPath);
     }
 
     public Manifest createManifest()
@@ -239,46 +240,42 @@ public class MavenArtifactGenerator implements ArtifactGenerator
         return new FileOutputStream(artifactFile);
     }
 
-    public void createMetadata(Metadata metadata, String metadataPath)
+    public void createMetadata(Metadata metadata, String path)
             throws NoSuchAlgorithmException, IOException
     {
-        File metadataFile = null;
+        Path metadataPath = basedir.resolve(path);
 
-        try
+        if (Files.exists(metadataPath))
         {
-            metadataFile = basedir.resolve(metadataPath).toFile();
-
-            if (metadataFile.exists())
-            {
-                metadataFile.delete();
-            }
-
-            // Make sure the artifact's parent directory exists before writing
-            // the model.
-            // noinspection ResultOfMethodCallIgnored
-            metadataFile.getParentFile().mkdirs();
-
-            try (OutputStream os = new MultipleDigestOutputStream(metadataFile, newOutputStream(metadataFile)))
-            {
-                Writer writer = WriterFactory.newXmlWriter(os);
-                MetadataXpp3Writer mappingWriter = new MetadataXpp3Writer();
-                mappingWriter.write(writer, metadata);
-
-                os.flush();
-            }
+            Files.delete(metadataPath);
         }
-        finally
+
+        // Make sure the artifact's parent directory exists before writing
+        // the model.
+        // noinspection ResultOfMethodCallIgnored
+        if (!Files.exists(metadataPath))
         {
-            generateChecksumsForArtifact(metadataFile);
+            Files.createDirectory(metadataPath.getParent());
+        }
+
+        try (OutputStream os = new MultipleDigestOutputStream(metadataPath, Files.newOutputStream(metadataPath)))
+        {
+            Writer writer = WriterFactory.newXmlWriter(os);
+            MetadataXpp3Writer mappingWriter = new MetadataXpp3Writer();
+            mappingWriter.write(writer, metadata);
+
+            os.flush();
+
+            generateChecksumsForArtifact(metadataPath);
         }
     }
 
     private void addMavenPomFile(Artifact artifact, JarOutputStream zos) throws IOException
     {
         final Artifact pomArtifact = MavenArtifactTestUtils.getPOMArtifact(artifact);
-        File pomFile = basedir.resolve(MavenArtifactUtils.convertArtifactToPath(pomArtifact)).toFile();
+        Path pomFile = basedir.resolve(MavenArtifactUtils.convertArtifactToPath(pomArtifact));
 
-        try (FileInputStream fis = new FileInputStream(pomFile))
+        try (InputStream fis = new BufferedInputStream(Files.newInputStream(pomFile)))
         {
             JarEntry ze = new JarEntry("META-INF/maven/" +
                                        artifact.getGroupId() + "/" +
@@ -334,11 +331,10 @@ public class MavenArtifactGenerator implements ArtifactGenerator
                    NoSuchAlgorithmException
     {
         final Artifact pomArtifact = MavenArtifactTestUtils.getPOMArtifact(artifact);
-        File pomFile = basedir.resolve(MavenArtifactUtils.convertArtifactToPath(pomArtifact)).toFile();
+        Path artifactPath = basedir.resolve(MavenArtifactUtils.convertArtifactToPath(pomArtifact));
 
         // Make sure the artifact's parent directory exists before writing the model.
-        //noinspection ResultOfMethodCallIgnored
-        pomFile.getParentFile().mkdirs();
+        Files.createDirectories(artifactPath.getParent());
 
         Model model = new Model();
         model.setGroupId(artifact.getGroupId());
@@ -350,13 +346,13 @@ public class MavenArtifactGenerator implements ArtifactGenerator
 
         logger.debug("Generating pom file for {}...", artifact);
 
-        try (OutputStreamWriter pomFileWriter = new OutputStreamWriter(newOutputStream(pomFile)))
+        try (OutputStreamWriter pomFileWriter = new OutputStreamWriter(Files.newOutputStream(artifactPath)))
         {
             MavenXpp3Writer xpp3Writer = new MavenXpp3Writer();
             xpp3Writer.write(pomFileWriter, model);
         }
 
-        generateChecksumsForArtifact(pomFile);
+        generateChecksumsForArtifact(artifactPath);
     }
 
     private void setLicensesInPom(Model model)
@@ -378,10 +374,10 @@ public class MavenArtifactGenerator implements ArtifactGenerator
         }
     }
 
-    private void generateChecksumsForArtifact(File artifactFile)
+    private void generateChecksumsForArtifact(Path path)
             throws NoSuchAlgorithmException, IOException
     {
-        try (InputStream is = new FileInputStream(artifactFile);
+        try (InputStream is = Files.newInputStream(path);
              MultipleDigestInputStream mdis = new MultipleDigestInputStream(is))
         {
             int size = 4096;
@@ -395,17 +391,15 @@ public class MavenArtifactGenerator implements ArtifactGenerator
             String md5 = mdis.getMessageDigestAsHexadecimalString(EncryptionAlgorithmsEnum.MD5.getAlgorithm());
             String sha1 = mdis.getMessageDigestAsHexadecimalString(EncryptionAlgorithmsEnum.SHA1.getAlgorithm());
 
-            Path artifactPath = artifactFile.toPath();
-
-            Path checksumPath = artifactPath.resolveSibling(artifactPath.getFileName() + EncryptionAlgorithmsEnum.MD5.getExtension());
-            try (OutputStream os = newOutputStream(checksumPath.toFile()))
+            Path checksumPath = path.resolveSibling(path.getFileName() + EncryptionAlgorithmsEnum.MD5.getExtension());
+            try (OutputStream os = Files.newOutputStream(checksumPath))
             {
                 IOUtils.write(md5, os, StandardCharsets.UTF_8);
                 os.flush();
             }
 
-            checksumPath = artifactPath.resolveSibling(artifactPath.getFileName() + EncryptionAlgorithmsEnum.SHA1.getExtension());
-            try (OutputStream os = newOutputStream(checksumPath.toFile()))
+            checksumPath = path.resolveSibling(path.getFileName() + EncryptionAlgorithmsEnum.SHA1.getExtension());
+            try (OutputStream os = Files.newOutputStream(checksumPath))
             {
                 IOUtils.write(sha1, os, StandardCharsets.UTF_8);
                 os.flush();
