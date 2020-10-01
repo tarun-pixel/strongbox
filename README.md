@@ -12,7 +12,7 @@
 [![GitHub issues by-label][hacktoberfest-badge]][hacktoberfest-link]
 [![GitHub issues by-label][stackoverflow-badge]][stackoverflow-link]
 
-Welcome to the Strongbox artifact repository manager's home.
+Welcome to the Strongbox era artifact repository manager's home.
 
 # General
 
@@ -145,4 +145,4 @@ We'd also like to thank our sponsors for generously providing us with licenses f
 [yourkit-link]: https://www.yourkit.com
 [yourkit-java-profiler-link]: https://www.yourkit.com/java/profiler
 [yourkit-dotnet-profiler-link]: https://www.yourkit.com/.net/profiler
-[yourkit-monitor-link]: https://www.yourkit.com/youmonitor/
+[yourkit-monitor-link]: https://www.yourkit.com/youmonitor/   
